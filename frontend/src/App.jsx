@@ -3,15 +3,17 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PrivateRoute from "./components/PrivateRoute.jsx";
 
-import Home from "./pages/Home";
-import UserLogin from "./pages/UserLogin";
-import UserRegister from "./pages/UserRegister";
-// import AdminLogin from "./pages/AdminLogin"
-// import AdminDashboard from "./pages/AdminDashboard"
-// import AdminUserList from "./pages/AdminUserList"
-import UserProfile from "./pages/UserProfile";
-// import AdminAddUser from "./pages/AdminAddUser"
-// import AdminEditUser from "./pages/AdminEditUser"
+import Home from "./pages/users/Home.jsx";
+import UserLogin from "./pages/users/UserLogin.jsx";
+import UserRegister from "./pages/users/UserRegister.jsx";
+import UserProfile from "./pages/users/UserProfile.jsx";
+
+import AdminLogin from "./pages/admin/AdminLogin"
+import AdminRoute from "./pages/admin/AdminRoute.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard"
+import AdminUserList from "./pages/admin/AdminUserList"
+import AdminAddUser from "./pages/admin/AdminAddUser"
+import AdminEditUser from "./pages/admin/AdminEditUser"
 
 function App() {
   return (
@@ -27,12 +29,15 @@ function App() {
           <Route path="" element={<PrivateRoute />}>
             <Route path="/profile" element={<UserProfile />} />
           </Route>
-          
-          {/* <Route path="/admin" element={<AdminLogin />} /> */}
-          {/* <Route path="/admin-dashboard" element={<AdminDashboard />} /> */}
-          {/* <Route path="/users-list" element={<AdminUserList />} /> */}
-          {/* <Route path="/add-user" element={<AdminAddUser />} /> */}
-          {/* <Route path="/edit-user" element={<AdminEditUser />} /> */}
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUserList />} />
+            <Route path="users/add" element={<AdminAddUser />} />
+            <Route path="users/edit/:id" element={<AdminEditUser />} />
+          </Route>
         </Routes>
       </Router>
     </>

@@ -1,100 +1,106 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import profilePlaceHolder from "/Images/profile.jpg";
-import { FaCamera } from "react-icons/fa";
-import { setCredentials } from "../features/authSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+import AdminLayout from "../../components/AdminLayout";
+import {
+  useGetUsersQuery,
+  useUpdateUserMutation,
+} from "../../features/adminApiSlice";
 import { toast } from "react-toastify";
 import { TailSpin } from "react-loader-spinner";
-import { useUpdateUserMutation } from "../features/usersApiSlice";
-import { storage } from '../firebase/firebase'
+import profilePlaceHolder from "/Images/profile.jpg";
+import { FaCamera } from "react-icons/fa";
+import { storage } from '../../firebase/firebase'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const UserProfile = () => {
+const AdminEditUser = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [profilePhoto, setProfilePhoto] = useState(profilePlaceHolder);
   const [file, setFile] = useState(null);
-
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  const { userInfo } = useSelector((state) => state.auth);
-
-  const [updateProfile, { isLoading }] = useUpdateUserMutation();
+  const [errors, setErrors] = useState({});
+  const { data: users } = useGetUsersQuery();
+  const [updateUser, { isLoading }] = useUpdateUserMutation();
 
   useEffect(() => {
-    setName(userInfo.name);
-    setEmail(userInfo.email);
-    setProfilePhoto(userInfo.profilePhoto || profilePlaceHolder);
-  }, [userInfo.setName, userInfo.setEmail]);
+    if (users) {
+      const user = users.find((u) => u._id === id);
+      if (user) {
+        setName(user.name);
+        setEmail(user.email);
+        setProfilePhoto(user.profilePhoto || profilePlaceHolder);
+      }
+    }
+  }, [users, id]);
 
   const handleImageChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+      if (selectedFile.size > 5 * 1024 * 1024) { 
+        setErrors(prev => ({ ...prev, file: "File size should not exceed 5MB" }));
+        return;
+      }
       setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfilePhoto(reader.result);
       };
       reader.readAsDataURL(selectedFile);
+      setErrors(prev => ({ ...prev, file: null }));
     }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (name.trim().length < 4) {
+      newErrors.name = "Name must be at least 4 characters long";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    
     e.preventDefault();
-    console.log(userInfo,"userInfo")
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-    } else {
+    if (validateForm()) {
       try {
-        console.log("Hi 1")
-        let profilePhotoUrl = userInfo.profilePhoto;
-        console.log(file,"file")
+        let profilePhotoUrl = profilePhoto;
+        
         if (file) {
-          console.log(file.name, "filename")
-          console.log(storage,"storage")
           const storageRef = ref(storage, `profilePhotos/${file.name}`);
-          console.log("after")
-          console.log(storageRef,"sref")
           await uploadBytes(storageRef, file);
-          console.log("await below")
           profilePhotoUrl = await getDownloadURL(storageRef);
-          console.log(profilePhotoUrl,"ppurl")
         }
-        console.log("Hi 2")
 
-        const res = await updateProfile({
-          _id: userInfo._id,
-          name,
-          email,
-          password,
-          profilePhoto: profilePhotoUrl,
+        const result = await updateUser({ 
+          id, 
+          name: name.trim(), 
+          email: email.trim(),
+          profilePhoto: profilePhotoUrl
         }).unwrap();
-        dispatch(setCredentials({ ...res }));
-        console.log("Hi 3")
-        toast.success("Profile updated");
-        console.log("Hi 4")
+        toast.success("User updated successfully");
+        navigate("/admin/users");
       } catch (err) {
+        console.error('Update error:', err);
         toast.error(err?.data?.message || err.error);
       }
+    } else {
+      toast.error("Please correct the errors before submitting");
     }
-    // const formData = { name, email, password, confirmPassword };
-    // console.log('Updated User Data:', formData);
-    // navigate('/profile');
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-100 flex items-center justify-center py-10 px-4 mt-20">
+    <AdminLayout>
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-100 flex items-center justify-center py-10 px-4 mt-0">
         <div className="max-w-md w-full bg-white rounded-lg p-8 shadow-lg">
           <h1 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-            Update Profile
+            Edit User
           </h1>
 
           <div className="flex justify-center mb-6">
@@ -119,6 +125,7 @@ const UserProfile = () => {
               />
             </label>
           </div>
+          {errors.file && <p className="text-red-500 text-xs italic text-center mb-4">{errors.file}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -130,9 +137,10 @@ const UserProfile = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter username"
-                className="mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 required
               />
+              {errors.name && <p className="text-red-500 text-xs italic">{errors.name}</p>}
             </div>
 
             <div>
@@ -144,35 +152,10 @@ const UserProfile = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email"
-                className="mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 required
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
-                className="mt-1 block w-full h-12 bg-gray-100 text-gray-800 rounded-md px-4 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
+              {errors.email && <p className="text-red-500 text-xs italic">{errors.email}</p>}
             </div>
 
             <div>
@@ -193,15 +176,15 @@ const UserProfile = () => {
                     visible={true}
                   />
                 ) : (
-                  "Update Profile"
+                  "Update User"
                 )}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </>
+    </AdminLayout>
   );
 };
 
-export default UserProfile;
+export default AdminEditUser;

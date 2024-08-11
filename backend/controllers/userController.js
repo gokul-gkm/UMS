@@ -5,9 +5,10 @@ import generateToken from '../utils/generateToken.js';
 //route POST /api/users/auth
 //access Public
 const authUser = asyncHandler(async (req, res) => {
+    
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    console.log(user);
+   
     if (user && (await user.matchPassword(password))) {
         generateToken(res, user._id)
         res.status(201).json({
@@ -45,6 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             profilePhoto: user.profilePhoto,
+            isAdmin: user.isAdmin
         });
     } else {
         res.status(400);
@@ -73,7 +75,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
           _id: user._id,
           name: user.name,
           email: user.email,
-          profilePhoto: user.profilePhoto, // Include profile photo URL
+          profilePhoto: user.profilePhoto, 
+          isAdmin: user.isAdmin
         });
       } else {
         res.status(404);
@@ -99,6 +102,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
             name: updatedUser.name,
             email: updatedUser.email,
             profilePhoto: updatedUser.profilePhoto, 
+            isAdmin: updatedUser.isAdmin
         })
     } else {
         res.status(404);

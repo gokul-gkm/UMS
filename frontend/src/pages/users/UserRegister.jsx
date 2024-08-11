@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { TailSpin } from "react-loader-spinner";
-import { useRegisterMutation } from "../features/usersApiSlice";
-import { setCredentials } from "../features/authSlice";
+import { useRegisterMutation } from "../../features/usersApiSlice";
+import { setCredentials } from "../../features/authSlice";
+import { validateForm } from '../../../public/js/validation';
 
 const UserRegister = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -26,15 +28,22 @@ const UserRegister = () => {
 
   const handleRegistration = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-    } else {
+
+    const validationErrors =  validateForm(name, email, password, confirmPassword);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
       try {
-        const res = await register({ name, email, password }).unwrap();
+        const res = await register({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        }).unwrap();
         dispatch(setCredentials({ ...res }));
         navigate("/");
+        toast.success("Registration successful!");
       } catch (err) {
-        toast.error(err?.data?.message || err.error);
+        toast.error(err?.data?.message || err.error || "An error occurred during registration");
       }
     }
   };
@@ -52,8 +61,9 @@ const UserRegister = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Username"
-              className="w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border focus:border-indigo-500 focus:outline-none"
+              className={`w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:border-indigo-500 focus:outline-none`}
             />
+            {errors.name && <p className="text-red-500 text-xs italic">{errors.name}</p>}
           </div>
           <div>
             <input
@@ -61,8 +71,9 @@ const UserRegister = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
-              className="w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border focus:border-indigo-500 focus:outline-none"
+              className={`w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border ${errors.email ? 'border-red-500' : 'border-gray-300'} focus:border-indigo-500 focus:outline-none`}
             />
+            {errors.email && <p className="text-red-500 text-xs italic">{errors.email}</p>}
           </div>
           <div>
             <input
@@ -70,8 +81,9 @@ const UserRegister = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border focus:border-indigo-500 focus:outline-none"
+              className={`w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:border-indigo-500 focus:outline-none`}
             />
+            {errors.password && <p className="text-red-500 text-xs italic">{errors.password}</p>}
           </div>
           <div>
             <input
@@ -79,8 +91,9 @@ const UserRegister = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm Password"
-              className="w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border focus:border-indigo-500 focus:outline-none"
+              className={`w-full h-12 bg-gray-100 text-gray-800 my-3 rounded-md px-4 py-2 font-medium border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} focus:border-indigo-500 focus:outline-none`}
             />
+            {errors.confirmPassword && <p className="text-red-500 text-xs italic">{errors.confirmPassword}</p>}
           </div>
           <button
             type="submit"

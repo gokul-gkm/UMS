@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/Navbar";
 import { useSelector } from "react-redux";
 
 const Home = () => {
@@ -8,7 +8,7 @@ const Home = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex items-center justify-center py-10 px-4">
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-100 flex items-center justify-center py-10 px-4">
         <div className="bg-white shadow-lg rounded-md p-8 md:p-14 mx-auto text-center">
           <h1 className="text-3xl font-bold text-indigo-700 mb-4">
             Welcome Back, {userInfo?.name || 'Guest'}!

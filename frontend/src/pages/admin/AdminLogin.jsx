@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useLoginMutation } from "../features/usersApiSlice";
-import { setCredentials } from "../features/authSlice";
+import { useAdminLoginMutation } from "../../features/adminApiSlice";
+import { setAdminCredentials } from "../../features/adminAuthSlice";
 import { toast } from "react-toastify";
 import { TailSpin } from "react-loader-spinner";
 
-const UserLogin = () => {
+const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const [login, { isLoading }] = useLoginMutation();
+  const [login, { isLoading }] = useAdminLoginMutation();
 
-  const { userInfo } = useSelector((state) => state.auth);
+  const { adminInfo } = useSelector((state) => state.adminAuth);
 
   useEffect(() => {
-    if (userInfo) {
-      navigate("/");
+    if (adminInfo) {
+      navigate("/admin/dashboard");
     }
-  }, [navigate, userInfo]);
+  }, [navigate, adminInfo]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const res = await login({ email, password }).unwrap();
-      dispatch(setCredentials({ ...res }));
-      navigate("/");
+      dispatch(setAdminCredentials({ ...res }));
+      navigate("/admin/dashboard");
     } catch (err) {
       toast.error(err?.data?.message || err.error);
     }
@@ -38,7 +38,7 @@ const UserLogin = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex items-center justify-center py-10 px-4">
       <div className="max-w-sm w-full bg-white rounded-lg p-8 shadow-lg">
         <h1 className="text-2xl font-medium mb-7 text-center text-indigo-700">
-          Sign In
+          Admin Sign In
         </h1>
         <form onSubmit={handleLogin}>
           <div>
@@ -80,20 +80,9 @@ const UserLogin = () => {
             )}
           </button>
         </form>
-        <div className="mt-10 text-gray-500 text-sm text-center">
-          <p>
-            Create an account?{" "}
-            <span
-              onClick={() => navigate("/register")}
-              className="text-indigo-700 font-medium cursor-pointer"
-            >
-              Sign Up Now
-            </span>
-          </p>
-        </div>
       </div>
     </div>
   );
 };
 
-export default UserLogin;
+export default AdminLogin;
